@@ -68,6 +68,8 @@ def place_raindrops(u):
         u[0, x-2:x+2, y-2:y+2] = 120
 
 
+def mouse_raindrops(x, y, u):
+    u[0, x - 2:x + 2, y - 2:y + 2] = 120
 def main():
     pygame.init()
     display = pygame.display.set_mode((dimx*cellsize, dimy*cellsize))
@@ -81,6 +83,9 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = event.pos
+                mouse_raindrops(x//cellsize, y//cellsize, u)
 
         place_raindrops(u)
         update(u, alpha)
