@@ -11,6 +11,13 @@ dimy = 300   # height of the simulation domain
 cellsize = 2 # display size of a cell in pixel
 walls = np.zeros((dimx, dimy))
 
+PULSE_AMPLITUDE = 240
+WAVE_PROPAGATION_SPEED = 0.5    # The "original" wave propagation speed
+ENERGY_CONSERVATION = 0.995
+
+RANDOM_DROPS = False
+DROP_RATE = 0.01
+
 
 def init_simulation():
     walls_img = Image.open('img/wall.png')      # Image representing non-passable walls in simulation
@@ -30,9 +37,8 @@ def init_simulation():
     print(walls)
 
     u = np.zeros((3, dimx, dimy))           # The three dimensional simulation grid
-    c = 0.5                                 # The "original" wave propagation speed
     alpha = np.zeros((dimx, dimy))          # wave propagation velocities of the entire simulation domain
-    alpha[0:dimx, 0:dimy] = ((c*k) / h)**2  # will be set to a constant value of tau
+    alpha[0:dimx, 0:dimy] = ((WAVE_PROPAGATION_SPEED*k) / h)**2  # will be set to a constant value of tau
     return u, alpha
 
 
@@ -58,18 +64,20 @@ def update(u, alpha):
 
     # Not part of the wave equation but I need to remove energy from the system.
     # The boundary conditions are closed. Energy cannot leave and the simulation keeps adding energy.
-    u[0, 1:dimx-1, 1:dimy-1] *= 0.995
+    u[0, 1:dimx-1, 1:dimy-1] *= ENERGY_CONSERVATION
 
 
 def place_raindrops(u):
-    if random.random() < 0.02:
+    if random.random() < DROP_RATE:
         x = random.randrange(5, dimx-5)
         y = random.randrange(5, dimy-5)
-        u[0, x-2:x+2, y-2:y+2] = 120
+        u[0, x-2:x+2, y-2:y+2] = PULSE_AMPLITUDE
 
 
 def mouse_raindrops(x, y, u):
-    u[0, x - 2:x + 2, y - 2:y + 2] = 120
+    u[0, x - 2:x + 2, y - 2:y + 2] = PULSE_AMPLITUDE
+
+
 def main():
     pygame.init()
     display = pygame.display.set_mode((dimx*cellsize, dimy*cellsize))
@@ -87,7 +95,9 @@ def main():
                 x, y = event.pos
                 mouse_raindrops(x//cellsize, y//cellsize, u)
 
-        place_raindrops(u)
+        if RANDOM_DROPS:
+            place_raindrops(u)
+
         update(u, alpha)
 
         pixeldata[1:dimx, 1:dimy, 0] = np.clip(u[0, 1:dimx, 1:dimy] + 128, 0, 255)
