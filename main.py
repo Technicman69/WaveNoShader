@@ -9,31 +9,35 @@ k = 1        # time step width
 dimx = 300   # width of the simulation domain
 dimy = 300   # height of the simulation domain
 cellsize = 2 # display size of a cell in pixel
-walls = np.zeros((dimx, dimy))
-PULSE_AMPLITUDE = 240
+
+walls = None
+source = None
+
+PULSE_AMPLITUDE = 120
 WAVE_PROPAGATION_SPEED = 0.5   # The "original" wave propagation speed
 ENERGY_CONSERVATION = 0.995
 
 RANDOM_DROPS = False
 DROP_RATE = 0.01
 
+SOURCE_PULSE_DELAY = 120
+
 
 def init_simulation():
-    walls_img = Image.open('img/wall.png')      # Image representing non-passable walls in simulation
-    global dimx, dimy, walls
-    dimx = walls_img.width
-    dimy = walls_img.height
-    walls_data = np.asarray(walls_img)
-    print(type(walls_data))
-    print(walls_data.shape)
-    print(walls_data)
-    walls = np.zeros((dimx, dimy))
+    global dimx, dimy, walls, source
+    img = Image.open('img/wall.png')      # Image representing non-passable walls in simulation
+    dimx = img.width
+    dimy = img.height
+    img_matrix = np.asarray(img)
+    img_matrix = np.transpose(img_matrix, (1, 0, 2))
     # 0 - of pixel is closer to black, 1 - if closer to white (judging by red channel value only)
-    walls[1:dimx-1, 1:dimy-1] = walls_data[1:dimx-1, 1:dimy-1, 0] // 128
-    walls = walls.transpose()
-    print(type(walls))
-    print(walls.shape)
-    print(walls)
+    walls = np.zeros((dimx, dimy))
+    walls[1:dimx-1, 1:dimy-1] = img_matrix[1:dimx-1, 1:dimy-1, 0] // 128
+
+    source = np.zeros((dimx, dimy))
+    source[1:dimx-1, 1:dimy-1] = (img_matrix[1:dimx-1, 1:dimy-1, 0] -
+                                  img_matrix[1:dimx-1, 1:dimy-1, 1] -
+                                  img_matrix[1:dimx-1, 1:dimy-1, 2]) // 170
 
     u = np.zeros((3, dimx, dimy))           # The three dimensional simulation grid
     alpha = np.zeros((dimx, dimy))          # wave propagation velocities of the entire simulation domain
@@ -66,6 +70,13 @@ def update(u, alpha):
     u[0, 1:dimx-1, 1:dimy-1] *= ENERGY_CONSERVATION
 
 
+def source_raindrops(u):
+    u[0, 1:dimx-1, 1:dimy-1] = (
+        (1 - source[1:dimx-1, 1:dimy-1]) * u[0, 1:dimx-1, 1:dimy-1] +
+        source[1:dimx - 1, 1:dimy - 1] * PULSE_AMPLITUDE
+    )
+
+
 def place_raindrops(u):
     if random.random() < DROP_RATE:
         x = random.randrange(5, dimx-5)
@@ -78,12 +89,14 @@ def mouse_raindrops(x, y, u):
 
 
 def main():
+    u, alpha = init_simulation()
+    pixeldata = np.zeros((dimx, dimy, 3), dtype=np.uint8 )
+
     pygame.init()
     display = pygame.display.set_mode((dimx*cellsize, dimy*cellsize))
     pygame.display.set_caption("Solving the 2d Wave Equation")
 
-    u, alpha = init_simulation()
-    pixeldata = np.zeros((dimx, dimy, 3), dtype=np.uint8 )
+    source_counter = 0
 
     while True:
         for event in pygame.event.get():
@@ -96,6 +109,11 @@ def main():
 
         if RANDOM_DROPS:
             place_raindrops(u)
+
+        source_counter += 1
+        if source_counter >= SOURCE_PULSE_DELAY:
+            source_raindrops(u)
+            source_counter = 0
 
         update(u, alpha)
 
