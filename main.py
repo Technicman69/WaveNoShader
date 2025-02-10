@@ -10,9 +10,8 @@ dimx = 300   # width of the simulation domain
 dimy = 300   # height of the simulation domain
 cellsize = 2 # display size of a cell in pixel
 walls = np.zeros((dimx, dimy))
-
 PULSE_AMPLITUDE = 240
-WAVE_PROPAGATION_SPEED = 0.5    # The "original" wave propagation speed
+WAVE_PROPAGATION_SPEED = 0.5   # The "original" wave propagation speed
 ENERGY_CONSERVATION = 0.995
 
 RANDOM_DROPS = False
@@ -103,6 +102,9 @@ def main():
         pixeldata[1:dimx, 1:dimy, 0] = np.clip(u[0, 1:dimx, 1:dimy] + 128, 0, 255)
         pixeldata[1:dimx, 1:dimy, 1] = np.clip(u[1, 1:dimx, 1:dimy] + 128, 0, 255)
         pixeldata[1:dimx, 1:dimy, 2] = np.clip(u[2, 1:dimx, 1:dimy] + 128, 0, 255)
+        pixeldata[1:dimx, 1:dimy, 0] *= walls[1:dimx, 1:dimy].astype(np.uint8)
+        pixeldata[1:dimx, 1:dimy, 1] *= walls[1:dimx, 1:dimy].astype(np.uint8)
+        pixeldata[1:dimx, 1:dimy, 2] *= walls[1:dimx, 1:dimy].astype(np.uint8)
 
         surf = pygame.surfarray.make_surface(pixeldata)
         display.blit(pygame.transform.scale(surf, (dimx * cellsize, dimy * cellsize)), (0, 0))
